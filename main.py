@@ -379,7 +379,8 @@ class GerekceliKararApp:
                 self.text_editor.insert(tk.INSERT, "\n\n")
             elif command == "virgül koy":
                 self.text_editor.insert(tk.INSERT, ", ")
-                
+            elif command == "yeni satır":
+                self.text_editor.insert(tk.INSERT, "\n")
         success = self.speech_manager.start_listening(on_text_recognized, on_command_recognized)
         if success:
             self.dictation_btn.config(relief=tk.SUNKEN, bg="red")
