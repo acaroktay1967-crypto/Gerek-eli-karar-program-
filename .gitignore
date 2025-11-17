@@ -36,6 +36,9 @@ env/
 *.pdf
 *.docx
 
+# Test files
+test_*.py
+
 # OS
 .DS_Store
 Thumbs.db
