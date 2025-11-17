@@ -7,7 +7,6 @@ Handles speech-to-text conversion and voice commands
 
 import speech_recognition as sr
 import threading
-import queue
 
 
 class SpeechRecognitionManager:
