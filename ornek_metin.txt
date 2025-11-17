@@ -1,0 +1,62 @@
+# Örnek Gerekçeli Karar Metni
+
+Bu dosya, Gerekçeli Karar Programı'nda kullanılabilecek örnek bir metin içermektedir.
+
+---
+
+## T.C. YARGITAY 4. HUKUK DAİRESİ
+## E: 2024/1234  K: 2024/5678
+
+### KARAR
+
+Taraflar arasındaki "alacak" davasından dolayı yapılan yargılama sonunda; İlk Derece Mahkemesince davanın kabulüne dair verilen 15.03.2024 tarih ve 2023/456 E., 2024/123 K. sayılı kararın incelenmesi davalı vekili tarafından istenilmesi üzerine, Yargıtay'ca incelenerek dosyadaki belgeler okunup gereği görüşüldü:
+
+### KARAR GEREKÇESİ
+
+Davacı vekili, müvekkilinin davalıya ödünç para verdiğini, davalının borcunu ödemediğini ileri sürerek, faizi ile birlikte tahsilini talep etmiştir.
+
+Davalı vekili, ödünç ilişkisinin bulunmadığını, paranın ticari ilişki çerçevesinde verildiğini savunmuştur.
+
+Mahkemece, davacının iddiasının ispat edildiği gerekçesiyle davanın kabulüne karar verilmiş; hüküm, davalı vekili tarafından temyiz edilmiştir.
+
+1- HMK 297. maddesi gereğince, iddia edilen her vakıa için kesin delil gösterilmesi zorunludur.
+
+2- Somut olayda, davacı tarafından sunulan belgeler ve tanık beyanları incelendiğinde, ödünç ilişkisinin varlığı açıkça ortaya konulmuştur.
+
+3- Davalının savunmasında ileri sürdüğü hususlar, davacının delillerini çürütmeye yeterli değildir.
+
+4- Bu itibarla, yerel mahkeme kararı hukuka ve usule uygundur.
+
+### SONUÇ
+
+Açıklanan nedenlerle, davalı vekilinin tüm temyiz itirazlarının reddiyle usul ve yasaya uygun bulunan hükmün ONANMASINA, alınan peşin harcın istek halinde iadesine, 17.11.2024 tarihinde oy birliğiyle karar verildi.
+
+---
+
+## Kullanım Talimatları
+
+Bu metni programda kullanmak için:
+
+1. Dosya > Aç menüsünden bu dosyayı seçin
+2. Metni düzenleyin, biçimlendirin
+3. Gerekirse başka dillere çevirin
+4. PDF veya DOCX olarak kaydedin
+
+### Biçimlendirme Önerileri:
+
+- Başlıkları kalın yapın
+- Önemli maddeleri altı çizili yapın
+- Madde numaralarını kalın yapın
+- Ana başlıklar için 16pt boyut kullanın
+- Normal metin için 12pt boyut kullanın
+
+### Çeviri Önerileri:
+
+Bu tür hukuki metinleri çevirdikten sonra:
+- Hukuki terimleri kontrol edin
+- Profesyonel bir çevirmen ile gözden geçirin
+- Hedef ülkenin hukuk sistemi terminolojisine uyarlayın
+
+---
+
+**Not:** Bu örnek metin sadece programın özelliklerini göstermek içindir. Gerçek bir mahkeme kararı değildir.
