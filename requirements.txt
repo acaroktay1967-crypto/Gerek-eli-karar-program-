@@ -1,0 +1,6 @@
+tkinter-tooltip==2.1.0
+SpeechRecognition==3.10.1
+googletrans==4.0.0rc1
+python-docx==1.1.0
+fpdf==1.7.2
+pyaudio==0.2.14
