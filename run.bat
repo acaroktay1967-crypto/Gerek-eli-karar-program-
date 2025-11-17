@@ -7,8 +7,8 @@ echo.
 REM Check if Python is installed
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo HATA: Python kurulu degil!
-    echo Lutfen Python 3.7 veya uzerini yukleyin.
+    echo HATA: Python kurulu değil!
+    echo Lütfen Python 3.7 veya üzerini yükleyin.
     pause
     exit /b 1
 )
