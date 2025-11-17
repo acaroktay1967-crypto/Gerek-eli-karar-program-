@@ -1,0 +1,54 @@
+{
+    "app": {
+        "name": "Gerekçeli Karar Programı",
+        "version": "1.0.0",
+        "author": "acaroktay1967-crypto"
+    },
+    "default_settings": {
+        "font_family": "Arial",
+        "font_size": 12,
+        "default_language": "tr",
+        "window_width": 1200,
+        "window_height": 800
+    },
+    "translation": {
+        "default_source_lang": "tr",
+        "supported_languages": {
+            "en": "English",
+            "fr": "French",
+            "de": "German",
+            "es": "Spanish",
+            "tr": "Turkish",
+            "it": "Italian",
+            "pt": "Portuguese",
+            "ru": "Russian",
+            "ar": "Arabic",
+            "zh-CN": "Chinese (Simplified)"
+        }
+    },
+    "speech_recognition": {
+        "language": "tr-TR",
+        "timeout": 5,
+        "phrase_time_limit": 10,
+        "commands": {
+            "nokta koy": "period",
+            "virgül koy": "comma",
+            "paragraf ekle": "paragraph",
+            "yeni satır": "newline",
+            "dur": "stop"
+        }
+    },
+    "export": {
+        "default_format": "pdf",
+        "pdf_settings": {
+            "page_size": "A4",
+            "margin": 72,
+            "font_size": 12
+        },
+        "docx_settings": {
+            "font_name": "Arial",
+            "font_size": 12,
+            "line_spacing": 1.5
+        }
+    }
+}
