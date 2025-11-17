@@ -9,7 +9,6 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox, filedialog, font
 from tkinter.colorchooser import askcolor
 import threading
-import json
 import os
 
 # Import modules
