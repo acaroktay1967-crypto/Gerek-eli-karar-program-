@@ -21,7 +21,7 @@ if not exist "venv" (
 )
 
 REM Activate virtual environment
-echo Sanal ortam etkinlestiriliyor...
+echo Sanal ortam etkinleştiriliyor...
 call venv\Scripts\activate.bat
 
 REM Install/update dependencies
