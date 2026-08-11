@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerekçeli Karar Yazma Programı</title>
+    <meta name="theme-color" content="#0f5f86">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Karar Yazma">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Gerekçeli Karar Yazma Programı</h1>
+            <div class="toolbar">
+                <button id="btn-infaz" class="tool-btn">📊 İnfaz Hesaplama</button>
+                <button id="btn-tazminat" class="tool-btn">💰 Tazminat Hesaplama</button>
+                <button id="btn-faiz" class="tool-btn">💱 Faiz Hesaplama</button>
+                <button id="btn-dilekce" class="tool-btn">📝 Dilekçe Yazma</button>
+                <button id="btn-mahkeme-masraf" class="tool-btn">⚖️ Mahkeme Masraf</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel-header">
+                    <h3>Belge Klasörü</h3>
+                    <div style="display:flex;gap:4px;">
+                        <button id="btn-select-folder" class="btn-small">📁 Klasör</button>
+                        <button id="btn-select-file" class="btn-small">📄 Dosya</button>
+                    </div>
+                </div>
+                <div id="folder-tree" class="folder-tree"></div>
+                <button id="btn-delete" class="btn-danger">Seçili Belgeyi Sil</button>
+            </div>
+
+            <div class="center-panel">
+                <div class="panel-header">
+                    <h3>Belge Önizleme</h3>
+                </div>
+                <div id="preview" class="preview"></div>
+            </div>
+
+            <div class="right-panel">
+                <div class="scrollable-content">
+                    <div class="section">
+                        <h3>Başlık Bilgileri</h3>
+                        <div class="form-group">
+                            <label>Mahkeme:</label>
+                            <input type="text" id="mahkeme" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Dosya No:</label>
+                            <input type="text" id="esas_no" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Karar No:</label>
+                            <input type="text" id="karar_no" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Sanık:</label>
+                            <input type="text" id="sanik_ad" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Mağdur:</label>
+                            <input type="text" id="magdur_ad" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Müdafi/Vekil:</label>
+                            <input type="text" id="avukatlar" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Adresler:</label>
+                            <textarea id="adresler" class="form-textarea" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Suç Tarihi ve Yeri:</label>
+                            <input type="text" id="suc_tarih_yer" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Sevk Maddesi:</label>
+                            <input type="text" id="sevk_maddeleri" class="form-input">
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>Ceza Hesaplama</h3>
+                        <div class="form-group">
+                            <label>Temel Ceza (Yıl):</label>
+                            <input type="number" id="ceza-yil" class="form-input" min="0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>Temel Ceza (Ay):</label>
+                            <input type="number" id="ceza-ay" class="form-input" min="0" max="11" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Temel Ceza (Gün):</label>
+                            <input type="number" id="ceza-gun" class="form-input" min="0" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Para Cezası (Gün):</label>
+                            <input type="number" id="ceza-para-gun" class="form-input" min="0" step="1">
+                        </div>
+                        
+                        <div class="button-group">
+                            <h4>Artırımlar</h4>
+                            <button class="btn-small" data-action="add-artirim" data-madde="TCK 61" data-oran="0.5">TCK 61 (%50)</button>
+                            <button class="btn-small" data-action="add-artirim" data-madde="TCK 62" data-oran="0.5">TCK 62 (%50)</button>
+                        </div>
+                        
+                        <div class="button-group">
+                            <h4>İndirimler</h4>
+                            <button class="btn-small" data-action="add-indirim" data-madde="TCK 39" data-oran="0.25">TCK 39 (%25)</button>
+                            <button class="btn-small" data-action="add-indirim" data-madde="TCK 62" data-oran="0.166">TCK 62 (1/6)</button>
+                            <button class="btn-small" data-action="add-indirim" data-madde="TCK 29" data-oran="0.25">TCK 29 (%25)</button>
+                        </div>
+                        
+                        <button id="btn-hesapla-ceza" class="btn-primary">Ceza Hesapla</button>
+                        <div id="ceza-sonuc" class="result-box"></div>
+                        <button id="btn-cezayi-hukume-ekle" class="btn-secondary">Hesaplanan Cezayı Hüküm Bölümüne Ekle</button>
+                    </div>
+
+                    <div class="section">
+                        <h3>Bölümler</h3>
+                        <div class="form-group">
+                            <label>I. İddianame Özeti:</label>
+                            <textarea id="iddianame" class="form-textarea" rows="5"></textarea>
+                            <button class="btn-small" data-action="append-selection" data-section="iddianame">Seçili Metni Ekle</button>
+                        </div>
+                        <div class="form-group">
+                            <label>II. Sanık Savunması:</label>
+                            <textarea id="savunma" class="form-textarea" rows="5"></textarea>
+                            <button class="btn-small" data-action="append-selection" data-section="savunma">Seçili Metni Ekle</button>
+                        </div>
+                        <div class="form-group">
+                            <label>III. Tanık Beyanları:</label>
+                            <textarea id="tanik" class="form-textarea" rows="5"></textarea>
+                            <button class="btn-small" data-action="append-selection" data-section="tanik">Seçili Metni Ekle</button>
+                        </div>
+                        <div class="form-group">
+                            <label>IV. Adli Raporların Değerlendirilmesi:</label>
+                            <textarea id="rapor" class="form-textarea" rows="5"></textarea>
+                            <button class="btn-small" data-action="append-selection" data-section="rapor">Seçili Metni Ekle</button>
+                        </div>
+                        <div class="form-group">
+                            <label>V. Hukuki Gerekçe:</label>
+                            <textarea id="hukuki" class="form-textarea" rows="5"></textarea>
+                            <button class="btn-small" data-action="append-selection" data-section="hukuki">Seçili Metni Ekle</button>
+                        </div>
+                        <div class="form-group">
+                            <label>VI. Hüküm:</label>
+                            <textarea id="hukum" class="form-textarea" rows="5"></textarea>
+                            <button class="btn-small" data-action="append-selection" data-section="hukum">Seçili Metni Ekle</button>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>İşlemler</h3>
+                        <button id="btn-export-docx" class="btn-primary">Word'e Aktar (DOCX)</button>
+                        <button id="btn-export-html" class="btn-secondary">HTML Olarak Kaydet</button>
+                        <button id="btn-load-udf" class="btn-secondary">UDF Şablon Yükle</button>
+                        <button id="btn-update-preview" class="btn-secondary">Önizlemeyi Güncelle</button>
+                    </div>
+
+                    <div class="section">
+                        <h3>Gerekçeli Karar Taslağı</h3>
+                        <div id="template-preview" class="template-preview"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="status-text">Hazır</span>
+        </div>
+    </div>
+
+    <!-- Modal Pencereler -->
+    <!-- İnfaz Hesaplama Modal -->
+    <div id="modal-infaz" class="modal">
+        <div class="modal-content large-modal infaz-modal">
+            <div class="modal-header">
+                <h2>📊 İnfaz Hesaplama</h2>
+                <span class="infaz-modul-etiket">TCK m.63 mahsup · 5275 m.107 yaş indirimi · m.108</span>
+                <span class="close" data-modal="infaz">&times;</span>
+            </div>
+            <div class="modal-body infaz-modal-body">
+                <div class="infaz-layout">
+                    <!-- Orta panel: ceza ve tarih bilgileri -->
+                    <div class="infaz-orta-panel">
+                        <div class="infaz-bilgi-banner">
+                            Bu sürümde <strong>TCK m.63 tutukluluk mahsubu</strong> ve
+                            <strong>5275 m.107 yaş indirimi</strong> (15 altı: 1=3 gün, 15-18: 1=2 gün) uygulanır.
+                            Takvim hesabı: yıl 365/366 gün, aylar gerçek uzunluklarıyla.
+                        </div>
+                        <div class="form-section">
+                            <h3>Ceza Bilgileri</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Ceza (Yıl):</label>
+                                    <input type="number" id="infaz-yil" class="form-input" min="0" max="100" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ceza (Ay):</label>
+                                    <input type="number" id="infaz-ay" class="form-input" min="0" max="11" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ceza (Gün):</label>
+                                    <input type="number" id="infaz-gun" class="form-input" min="0" max="365" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Tarih Bilgileri</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Suç Tarihi:</label>
+                                    <input type="date" id="infaz-suc-tarihi" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Cezaevi Giriş Tarihi:</label>
+                                    <input type="date" id="infaz-cezaevi-giris" class="form-input">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section infaz-mahsup-section">
+                            <h3>TCK m.63 — Tutukluluk Mahsubu</h3>
+                            <p class="infaz-not">Ceza infazına başlamadan önce tutuklu kalınan süre cezadan düşülür. Tahliye edilip sonra cezaevine girildiyse yalnızca tutukluluk süresi mahsup edilir.</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Tutuklama Tarihi:</label>
+                                    <input type="date" id="infaz-tutuklama-tarihi" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Tutukluluk Tahliye Tarihi:</label>
+                                    <input type="date" id="infaz-tutukluluk-tahliye" class="form-input">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Mahsup Özeti (otomatik):</label>
+                                <input type="text" id="infaz-mahsup-ozet" class="form-input infaz-readonly infaz-mahsup-ozet-kutu" readonly placeholder="Tutuklama/tahliye tarihlerinden hesaplanır">
+                            </div>
+                            <div class="form-group">
+                                <label><input type="checkbox" id="infaz-manuel-mahsup"> Mahsup süresini manuel gir (yıl / ay / gün)</label>
+                            </div>
+                            <div id="infaz-manuel-mahsup-grup" class="form-row" style="display:none;">
+                                <div class="form-group">
+                                    <label>Mahsup (Yıl):</label>
+                                    <input type="number" id="infaz-mahsup-yil" class="form-input" min="0" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Mahsup (Ay):</label>
+                                    <input type="number" id="infaz-mahsup-ay" class="form-input" min="0" max="11" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label>Mahsup (Gün):</label>
+                                    <input type="number" id="infaz-mahsup-gun" class="form-input" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section infaz-yas-section">
+                            <h3>5275 m.107 — Yaş ve Fiili İnfaz İndirimi</h3>
+                            <p class="infaz-not">18 yaşından küçüklerde cezaevinde geçen her gün, yaşa göre katlanarak sayılır. Doğum tarihi giriniz.</p>
+                            <div class="form-group">
+                                <label>Doğum Tarihi:</label>
+                                <input type="date" id="infaz-dogum-tarihi" class="form-input">
+                            </div>
+                            <div id="infaz-yas-info" class="infaz-yas-info">
+                                Doğum tarihi girildiğinde yaş grubu ve m.107 indirimi burada gösterilir.
+                            </div>
+                            <div id="infaz-yas-badge" class="infaz-yas-badge" style="display:none;"></div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Hesaplanan Tarihler</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Koşullu Salıverilme Tarihi:</label>
+                                    <input type="text" id="infaz-kosullu-tarih" class="form-input infaz-readonly" readonly placeholder="Hesaplanacak">
+                                </div>
+                                <div class="form-group">
+                                    <label>Hakederek Tahliye Tarihi:</label>
+                                    <input type="text" id="infaz-hakederek-tarih" class="form-input infaz-readonly" readonly placeholder="Hesaplanacak">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Denetimli Serbestlik Bitişi:</label>
+                                    <input type="text" id="infaz-tahliye-tarih" class="form-input infaz-readonly" readonly placeholder="Denetimli seçilirse">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>5275 m.108 — Otomatik İnfaz Oranı</h3>
+                            <div id="infaz-rejim-bilgi" class="infaz-rejim-bilgi">
+                                Suç tarihine göre infaz oranı otomatik belirlenir.
+                            </div>
+                            <div class="form-row infaz-oran-ozet">
+                                <div class="form-group">
+                                    <label>Uygulanan Oran:</label>
+                                    <input type="text" id="infaz-oran-goster" class="form-input infaz-readonly" readonly value="—">
+                                </div>
+                                <div class="form-group">
+                                    <label>Madde Açıklaması:</label>
+                                    <input type="text" id="infaz-madde-aciklama" class="form-input infaz-readonly" readonly value="—">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label><input type="checkbox" id="infaz-manuel-oran"> Manuel oran seç (otomatik yerine)</label>
+                            </div>
+                            <div id="infaz-manuel-oran-grup" class="radio-group" style="display:none;">
+                                <label><input type="radio" name="infaz-orani" value="0.5" checked> 1/2 (m.107/2 genel)</label>
+                                <label><input type="radio" name="infaz-orani" value="0.667"> 2/3 (m.107/2 istisna / m.108/1 tekerrür)</label>
+                                <label><input type="radio" name="infaz-orani" value="0.75"> 3/4 (m.108/9 istisna suç)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Yan panel: istisna suçlar ve özel durumlar -->
+                    <div class="infaz-yan-panel">
+                        <div class="form-section">
+                            <h3>İstisna Suçlar (m.108/9)</h3>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" id="infaz-tck102" class="infaz-istisna"> TCK 102 — Cinsel Saldırı</label>
+                                <label><input type="checkbox" id="infaz-tck103" class="infaz-istisna"> TCK 103 — Çocukların Cinsel İstismarı</label>
+                                <label><input type="checkbox" id="infaz-tck104" class="infaz-istisna"> TCK 104 — Reşit Olmayanla Cinsel İlişki</label>
+                                <label><input type="checkbox" id="infaz-tck188" class="infaz-istisna"> TCK 188 — Uyuşturucu/Uyarıcı Madde</label>
+                                <label><input type="checkbox" id="infaz-teror" class="infaz-istisna"> Terör suçları (3713 s.k.)</label>
+                                <label><input type="checkbox" id="infaz-orgut" class="infaz-istisna"> Örgüt suçları (m.107/4)</label>
+                            </div>
+                            <p class="infaz-not">15-18 yaş grubunda istisna suçlarda oran 3/4 olarak uygulanır (7242 sonrası).</p>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Özel Durumlar</h3>
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" id="infaz-tekerrur"> Tekerrür (m.108/1)</label>
+                                <label><input type="checkbox" id="infaz-ikinci-tekerrur"> İkinci tekerrür (m.108/13)</label>
+                                <label><input type="checkbox" id="infaz-denetimli"> Denetimli Serbestlik (m.105/A)</label>
+                            </div>
+                            <input type="hidden" id="infaz-yas-grubu" value="Normal">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="infaz-actions">
+                    <button id="btn-hesapla-infaz" class="btn-primary">Hesapla</button>
+                </div>
+                <div id="infaz-hesap-ozet" class="infaz-hesap-ozet" style="display:none;">
+                    <h3>Hesaplama Özeti</h3>
+                    <div class="infaz-ozet-grid">
+                        <div class="infaz-ozet-kutu"><span class="infaz-ozet-baslik">Toplam Ceza</span><span id="ozet-toplam-ceza" class="infaz-ozet-deger">—</span></div>
+                        <div class="infaz-ozet-kutu infaz-ozet-mahsup"><span class="infaz-ozet-baslik">TCK m.63 Mahsup</span><span id="ozet-mahsup" class="infaz-ozet-deger">—</span></div>
+                        <div class="infaz-ozet-kutu"><span class="infaz-ozet-baslik">Kalan Ceza</span><span id="ozet-kalan-ceza" class="infaz-ozet-deger">—</span></div>
+                        <div class="infaz-ozet-kutu infaz-ozet-yas"><span class="infaz-ozet-baslik">5275 m.107 Yaş</span><span id="ozet-yas-indirimi" class="infaz-ozet-deger">—</span></div>
+                        <div class="infaz-ozet-kutu"><span class="infaz-ozet-baslik">Koşullu Salıverilme</span><span id="ozet-kosullu" class="infaz-ozet-deger">—</span></div>
+                        <div class="infaz-ozet-kutu"><span class="infaz-ozet-baslik">Hakederek Tahliye</span><span id="ozet-hakederek" class="infaz-ozet-deger">—</span></div>
+                    </div>
+                </div>
+                <div id="infaz-sonuc" class="result-box infaz-sonuc" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tazminat Hesaplama Modal -->
+    <div id="modal-tazminat" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2>💰 Tazminat Hesaplama (CMK 141-142)</h2>
+                <span class="close" data-modal="tazminat">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-section">
+                    <h3>Hesaplama Türü</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="tazminat-turu" value="beraat" checked> Beraat Tazminatı</label>
+                        <label><input type="radio" name="tazminat-turu" value="el-koyma"> El Koyma Tazminatı</label>
+                    </div>
+                </div>
+                
+                <div id="tazminat-beraat">
+                    <div class="form-section">
+                        <h3>Beraat Tazminatı Bilgileri</h3>
+                        <div class="form-group">
+                            <label>Suç Tarihi:</label>
+                            <input type="date" id="tazminat-suc-tarihi" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Gözaltı Tarihi:</label>
+                            <input type="date" id="tazminat-gozalti" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Tutuklama Tarihi:</label>
+                            <input type="date" id="tazminat-tutuklama" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Tahliye Tarihi:</label>
+                            <input type="date" id="tazminat-tahliye" class="form-input">
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tazminat-el-koyma" style="display:none;">
+                    <div class="form-section">
+                        <h3>El Koyma Tazminatı Bilgileri</h3>
+                        <div class="form-group">
+                            <label>Suç Tarihi:</label>
+                            <input type="date" id="tazminat-el-koyma-suc-tarihi" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>El Koyma Tarihi:</label>
+                            <input type="date" id="tazminat-el-koyma-tarihi" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Karar Kaldırılma Tarihi:</label>
+                            <input type="date" id="tazminat-karar-kaldirilma" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Mal Değeri (TL):</label>
+                            <input type="number" id="tazminat-mal-degeri" class="form-input" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="btn-hesapla-tazminat" class="btn-primary">Hesapla</button>
+                <div id="tazminat-sonuc" class="result-box" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Faiz Hesaplama Modal -->
+    <div id="modal-faiz" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2>💱 İki Tarih Arası Faiz Hesaplama</h2>
+                <span class="close" data-modal="faiz">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="faiz-info-banner">
+                    <strong>2026 oranları güncel:</strong> Yasal (avans) %39,75 — Reeskont %38,75
+                    <span class="faiz-info-kaynak">TCMB 20.12.2025</span>
+                </div>
+
+                <div class="form-row faiz-toolbar">
+                    <button type="button" id="btn-faiz-oran" class="btn-secondary btn-small">📋 Oran Tablosu</button>
+                    <button type="button" id="btn-faiz-kanun" class="btn-secondary btn-small">📜 Kanun Özeti</button>
+                </div>
+
+                <div class="form-section">
+                    <h3>Faiz Türü</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="faiz-turu" value="yasal" checked> Yasal Faiz</label>
+                        <label><input type="radio" name="faiz-turu" value="reeskont"> Reeskont Faiz</label>
+                        <label><input type="radio" name="faiz-turu" value="her-ikisi"> Her İkisi</label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ana Para (TL):</label>
+                        <input type="number" id="faiz-ana-para" class="form-input" min="0" step="0.01" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label>Başlangıç Tarihi:</label>
+                        <input type="date" id="faiz-baslangic" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Bitiş Tarihi:</label>
+                        <input type="date" id="faiz-bitis" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-row faiz-actions">
+                    <button id="btn-hesapla-faiz" class="btn-primary">Hesapla</button>
+                    <button type="button" id="btn-faiz-kopyala" class="btn-secondary" style="display:none;">Detayı Kopyala</button>
+                </div>
+
+                <div id="faiz-ozet" class="faiz-ozet-grid" style="display:none;">
+                    <div class="faiz-ozet-kutu">
+                        <span class="faiz-ozet-label">Yasal Faiz</span>
+                        <span id="faiz-ozet-yasal" class="faiz-ozet-deger">—</span>
+                    </div>
+                    <div class="faiz-ozet-kutu">
+                        <span class="faiz-ozet-label">Reeskont Faiz</span>
+                        <span id="faiz-ozet-reeskont" class="faiz-ozet-deger">—</span>
+                    </div>
+                    <div class="faiz-ozet-kutu faiz-ozet-toplam">
+                        <span class="faiz-ozet-label">Toplam (Ana Para + Faiz)</span>
+                        <span id="faiz-ozet-toplam" class="faiz-ozet-deger">—</span>
+                    </div>
+                </div>
+
+                <pre id="faiz-detay" class="faiz-detay-pre" style="display:none;"></pre>
+                <div id="faiz-sonuc" class="result-box" style="display:none;"></div>
+
+                <div id="faiz-metin-modal" class="faiz-metin-overlay" style="display:none;">
+                    <div class="faiz-metin-panel">
+                        <div class="faiz-metin-header">
+                            <h3 id="faiz-metin-baslik">Bilgi</h3>
+                            <button type="button" id="btn-faiz-metin-kapat" class="btn-small">&times;</button>
+                        </div>
+                        <pre id="faiz-metin-icerik" class="faiz-metin-pre"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dilekçe Yazma Modal -->
+    <div id="modal-dilekce" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2>📝 Dilekçe Yazma</h2>
+                <span class="close" data-modal="dilekce">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-section">
+                    <h3>Dilekçe Türü</h3>
+                    <div class="form-group">
+                        <select id="dilekce-turu" class="form-input">
+                            <option value="istinaf">İstinaf Dilekçesi (CMK 272)</option>
+                            <option value="temyiz">Temyiz Dilekçesi (CMK 286)</option>
+                            <option value="savunma">Savunma Dilekçesi</option>
+                            <option value="mudafilik">Müdafi Dilekçesi</option>
+                            <option value="tazminat">Tazminat Dilekçesi (CMK 141-142)</option>
+                            <option value="delil">Delil Sunma Dilekçesi</option>
+                            <option value="genel">Genel Dilekçe</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Mahkeme:</label>
+                        <input type="text" id="dilekce-mahkeme" class="form-input" placeholder="Örn: ... Ağır Ceza Mahkemesi">
+                    </div>
+                    <div class="form-group">
+                        <label>Üst Mahkeme (İstinaf/Temyiz):</label>
+                        <input type="text" id="dilekce-ust-mahkeme" class="form-input" placeholder="Örn: ... Bölge Adliye Mahkemesi">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Esas No:</label>
+                        <input type="text" id="dilekce-esas-no" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Karar No:</label>
+                        <input type="text" id="dilekce-karar-no" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Dilekçe Sahibi / Sanık:</label>
+                        <input type="text" id="dilekce-sahibi" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Müdafi / Vekil:</label>
+                        <input type="text" id="dilekce-mudafi" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Adres:</label>
+                    <textarea id="dilekce-adres" class="form-textarea" rows="2"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Konu:</label>
+                        <input type="text" id="dilekce-konu" class="form-input" placeholder="Dilekçe konusu">
+                    </div>
+                    <div class="form-group">
+                        <label>Tebliğ / Dilekçe Tarihi:</label>
+                        <input type="date" id="dilekce-teblig-tarihi" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ek Açıklamalar / Gerekçeler:</label>
+                    <textarea id="dilekce-ek" class="form-textarea" rows="4" placeholder="Dilekçe gerekçelerinizi buraya yazın"></textarea>
+                </div>
+
+                <div class="form-row faiz-actions">
+                    <button id="btn-dilekce-olustur" class="btn-primary">Şablon Oluştur</button>
+                    <button type="button" id="btn-dilekce-kopyala" class="btn-secondary" style="display:none;">Kopyala</button>
+                    <button type="button" id="btn-dilekce-kaydet" class="btn-secondary" style="display:none;">Kaydet (.txt)</button>
+                    <button type="button" id="btn-dilekce-savunmaya-ekle" class="btn-secondary" style="display:none;">Savunmaya Ekle</button>
+                </div>
+
+                <div class="form-group" style="margin-top:12px;">
+                    <label>Dilekçe Metni:</label>
+                    <textarea id="dilekce-metin" class="form-textarea dilekce-metin" rows="18" placeholder="Şablon oluştur butonuna basın veya doğrudan yazın"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mahkeme Masraf Hesaplama Modal -->
+    <div id="modal-mahkeme-masraf" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h2>⚖️ Mahkeme Masraf Hesaplama</h2>
+                <span class="close" data-modal="mahkeme-masraf">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-section">
+                    <h3>Dava Bilgileri</h3>
+                    <div class="form-group">
+                        <label>Dava Değeri (TL):</label>
+                        <input type="number" id="masraf-dava-degeri" class="form-input" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Hüküm Altına Alınan Miktar (TL):</label>
+                        <input type="number" id="masraf-hukum-miktari" class="form-input" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Kabul Oranı (%):</label>
+                        <input type="number" id="masraf-kabul-orani" class="form-input" min="0" max="100" value="100" step="0.1">
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Masraflar</h3>
+                    <div class="form-group">
+                        <label>PTT Tebligat Sayısı:</label>
+                        <input type="number" id="masraf-tebligat-sayisi" class="form-input" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Tebligat Türü:</label>
+                        <select id="masraf-tebligat-turu" class="form-input">
+                            <option value="normal">Normal (210 TL)</option>
+                            <option value="hizli">Hızlı (420 TL)</option>
+                            <option value="elektronik">Elektronik (15 TL)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Keşif Masrafı (TL):</label>
+                        <input type="number" id="masraf-kesif" class="form-input" min="0" step="0.01" value="0">
+                    </div>
+                </div>
+                
+                <button id="btn-hesapla-masraf" class="btn-primary">Hesapla</button>
+                <div id="masraf-sonuc" class="result-box" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="faiz-engine.js"></script>
+    <script src="dilekce-engine.js"></script>
+    <script src="renderer.js"></script>
+    <script>
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>
