@@ -853,3 +853,38 @@ select.form-input {
     }
 }
 
+
+/* iPhone Safari scroll fix */
+@media (max-width: 900px) {
+  html, body {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .container {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+  }
+
+  .main-content {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .left-panel,
+  .center-panel,
+  .right-panel {
+    overflow: visible !important;
+  }
+
+  .status-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+  }
+}
