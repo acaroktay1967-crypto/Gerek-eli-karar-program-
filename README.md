@@ -144,6 +144,10 @@ Bu proje açık kaynak kodludur.
 
 Katkılarınızı bekliyoruz! Lütfen pull request göndermekten çekinmeyin.
 
+## KVKK / örnek veri
+
+Form alanları ve örnek metinler anonimdir (mahkeme adı, esas/karar no, taraf isimleri yazılmaz). Gerçek karar ve elge dosyaları bu depoya konmaz.
+
 ## İletişim
 
 Sorularınız için GitHub Issues bölümünü kullanabilirsiniz.

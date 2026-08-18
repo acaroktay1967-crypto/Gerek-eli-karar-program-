@@ -32,9 +32,13 @@ env/
 *.swo
 *~
 
-# Output files
+# Output files / KVKK: gerçek karar, elge, belge örnekleri depoya girmez
 *.pdf
 *.docx
+*.doc
+*.odt
+*.udf
+*.zip
 
 # Test files
 test_*.py
