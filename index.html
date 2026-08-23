@@ -20,6 +20,7 @@
                 <button id="btn-faiz" class="tool-btn">💱 Faiz Hesaplama</button>
                 <button id="btn-dilekce" class="tool-btn">📝 Dilekçe Yazma</button>
                 <button id="btn-mahkeme-masraf" class="tool-btn">⚖️ Mahkeme Masraf</button>
+                <button id="btn-akilli-aktar" class="tool-btn">🧠 Akıllı Aktar</button>
             </div>
         </header>
 
@@ -656,7 +657,9 @@
 
     <script src="faiz-engine.js"></script>
     <script src="dilekce-engine.js"></script>
+    <script src="karar-import-engine.js"></script>
     <script src="renderer.js"></script>
+    <script src="smart-import-ui.js"></script>
     <script>
         if ('serviceWorker' in navigator && location.protocol !== 'file:') {
             navigator.serviceWorker.register('./sw.js').catch(() => {});

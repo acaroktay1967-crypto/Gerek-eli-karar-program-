@@ -1,11 +1,13 @@
-const CACHE_NAME = 'gerekceli-karar-iphone-v1';
+const CACHE_NAME = 'gerekceli-karar-iphone-v2';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './faiz-engine.js',
   './dilekce-engine.js',
+  './karar-import-engine.js',
   './renderer.js',
+  './smart-import-ui.js',
   './manifest.webmanifest',
   './icon.svg'
 ];
