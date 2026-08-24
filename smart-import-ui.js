@@ -354,41 +354,35 @@
     }
 
     async function getDocumentContent(path) {
+        if (!path) return '';
+
         const folderTree = document.getElementById('folder-tree');
         const items = folderTree ? folderTree.querySelectorAll('.folder-item') : [];
 
         for (const item of items) {
             const itemPath = item.dataset.path || item.textContent.replace(/^📄\s*/, '').trim();
-            if (itemPath === path) {
-                if (item._cachedContent) {
-                    return item._cachedContent;
-                }
+            if (itemPath === path && item._cachedContent) {
+                return item._cachedContent;
             }
         }
 
-        const previewDiv = document.getElementById('preview');
-        if (previewDiv && previewDiv.textContent) {
-            return previewDiv.textContent;
-        }
-
-        const IS_BROWSER_BUILD = typeof window !== 'undefined' && !window.electronAPI?.selectFolder;
-        if (!IS_BROWSER_BUILD && window.electronAPI) {
-            try {
-                const API_BASE = 'http://localhost:8765';
-                const response = await fetch(`${API_BASE}/api/load-document`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path })
-                });
-                const data = await response.json();
-                return data.content || '';
-            } catch (err) {
-                console.error('Belge içeriği alınamadı:', err);
+        const API_BASE = 'http://localhost:8765';
+        try {
+            const response = await fetch(`${API_BASE}/api/load-document`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+            if (!response.ok) {
+                console.error(`Belge yüklenemedi (${response.status}): ${path}`);
                 return '';
             }
+            const data = await response.json();
+            return data.content || '';
+        } catch (err) {
+            console.error('Belge içeriği alınamadı:', path, err);
+            return '';
         }
-
-        return '';
     }
 
     function updateAktarButton() {
