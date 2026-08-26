@@ -9,10 +9,15 @@ const STORE_NAME = 'kararlar';
 const FAV_STORE = 'favoriler';
 const HISTORY_STORE = 'gecmis';
 
+// HuggingFace API
+const HF_API_URL = 'https://datasets-server.huggingface.co/search';
+const HF_DATASET = 'hamzabagirsakci/turkish-court-decisions';
+
 let db = null;
 let currentFilter = 'all';
 let currentResults = [];
 let searchTimeout = null;
+let searchMode = 'local'; // 'local' veya 'online'
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -142,9 +147,59 @@ function setupEventListeners() {
 
 // Search
 async function performSearch(query) {
-    if (!db) return;
-    
     showLoading();
+    
+    if (searchMode === 'online') {
+        await performOnlineSearch(query);
+    } else {
+        await performLocalSearch(query);
+    }
+}
+
+// Online Search - HuggingFace API
+async function performOnlineSearch(query) {
+    try {
+        // Kaynak filtresi
+        let config = 'all';
+        if (currentFilter !== 'all') {
+            config = currentFilter;
+        }
+        
+        const url = `${HF_API_URL}?dataset=${HF_DATASET}&config=${config}&split=train&query=${encodeURIComponent(query)}&limit=50`;
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`API Hatası: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.rows && data.rows.length > 0) {
+            currentResults = data.rows.map(row => row.row);
+            displayResults(currentResults, query);
+            saveToHistory(query, currentResults.length);
+        } else {
+            currentResults = [];
+            displayResults([], query);
+        }
+    } catch (error) {
+        console.error('Online arama hatası:', error);
+        showToast('Online arama başarısız. Yerel aramayı deneyin.', 'error');
+        hideLoading();
+        
+        // Fallback to local search
+        await performLocalSearch(query);
+    }
+}
+
+// Local Search - IndexedDB
+async function performLocalSearch(query) {
+    if (!db) {
+        hideLoading();
+        showToast('Veritabanı yüklenmedi', 'error');
+        return;
+    }
     
     const normalizedQuery = normalizeText(query);
     const results = [];
@@ -194,6 +249,21 @@ async function performSearch(query) {
             resolve();
         };
     });
+}
+
+// Toggle search mode
+function toggleSearchMode() {
+    searchMode = searchMode === 'local' ? 'online' : 'local';
+    updateSearchModeUI();
+    showToast(searchMode === 'online' ? '🌐 Online mod (11M karar)' : '📱 Yerel mod', 'success');
+}
+
+function updateSearchModeUI() {
+    const btn = document.getElementById('searchModeBtn');
+    if (btn) {
+        btn.textContent = searchMode === 'online' ? '🌐 Online' : '📱 Yerel';
+        btn.classList.toggle('online', searchMode === 'online');
+    }
 }
 
 function normalizeText(text) {
@@ -708,3 +778,4 @@ if ('serviceWorker' in navigator) {
 
 // Make functions available globally for inline handlers
 window.searchFromHistory = searchFromHistory;
+window.toggleSearchMode = toggleSearchMode;

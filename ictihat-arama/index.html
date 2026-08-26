@@ -126,6 +126,26 @@
             height: 22px;
         }
 
+        .mode-btn {
+            padding: 8px 12px;
+            border: none;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.online {
+            background: var(--accent);
+        }
+
+        .mode-btn:active {
+            transform: scale(0.95);
+        }
+
         /* Search Box */
         .search-wrapper {
             position: relative;
@@ -701,6 +721,7 @@
                     İçtihat Arama
                 </div>
                 <div class="header-actions">
+                    <button class="mode-btn" id="searchModeBtn" onclick="toggleSearchMode()">📱 Yerel</button>
                     <button class="icon-btn" id="settingsBtn" aria-label="Ayarlar">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="3"/>
