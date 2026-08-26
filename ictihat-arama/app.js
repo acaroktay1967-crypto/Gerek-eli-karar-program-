@@ -156,16 +156,15 @@ async function performSearch(query) {
     }
 }
 
-// Online Search - HuggingFace API
+// Online Search - HuggingFace API (rows endpoint with client-side filtering)
 async function performOnlineSearch(query) {
     try {
         // Kaynak filtresi
-        let config = 'all';
-        if (currentFilter !== 'all') {
-            config = currentFilter;
-        }
+        let config = currentFilter !== 'all' ? currentFilter : 'yargitay';
         
-        const url = `${HF_API_URL}?dataset=${HF_DATASET}&config=${config}&split=train&query=${encodeURIComponent(query)}&limit=50`;
+        // Rastgele bir offset ile veri çek ve client-side filtrele
+        const offset = Math.floor(Math.random() * 1000);
+        const url = `https://datasets-server.huggingface.co/rows?dataset=${HF_DATASET}&config=${config}&split=train&offset=${offset}&length=100`;
         
         const response = await fetch(url);
         
@@ -176,9 +175,29 @@ async function performOnlineSearch(query) {
         const data = await response.json();
         
         if (data.rows && data.rows.length > 0) {
-            currentResults = data.rows.map(row => row.row);
-            displayResults(currentResults, query);
-            saveToHistory(query, currentResults.length);
+            // Client-side arama
+            const normalizedQuery = normalizeText(query);
+            const filtered = data.rows
+                .map(row => row.row)
+                .filter(record => {
+                    const text = normalizeText(record.text || '');
+                    const esasNo = normalizeText(record.esas_no || '');
+                    const kararNo = normalizeText(record.karar_no || '');
+                    return text.includes(normalizedQuery) || 
+                           esasNo.includes(normalizedQuery) || 
+                           kararNo.includes(normalizedQuery);
+                });
+            
+            if (filtered.length > 0) {
+                currentResults = filtered;
+                displayResults(currentResults, query);
+                saveToHistory(query, currentResults.length);
+            } else {
+                // Filtre sonucu boşsa, rastgele sonuç göster
+                showToast('Tam eşleşme bulunamadı. Rastgele sonuçlar gösteriliyor.', 'success');
+                currentResults = data.rows.slice(0, 20).map(row => row.row);
+                displayResults(currentResults, query);
+            }
         } else {
             currentResults = [];
             displayResults([], query);
