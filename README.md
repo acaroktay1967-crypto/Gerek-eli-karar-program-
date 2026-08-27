@@ -1,4 +1,4 @@
-    # Gerekçeli Karar Programı
+     # Gerekçeli Karar Programı
 
 Türkçe gerekçeli kararları düzenlemek, çevirmek ve çıktı almak için geliştirilmiş bir masaüstü uygulaması.
 
