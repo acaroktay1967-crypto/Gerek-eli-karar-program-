@@ -10,16 +10,26 @@ const FAV_STORE = 'favoriler';
 const HISTORY_STORE = 'gecmis';
 
 // HuggingFace API
-const HF_API_URL = 'https://datasets-server.huggingface.co/search';
+const HF_API_URL = 'https://datasets-server.huggingface.co/rows';
 const HF_DATASET = 'hamzabagirsakci/turkish-court-decisions';
+
+// Kaynak bilgileri (toplam kayıt sayıları)
+const SOURCE_INFO = {
+    yargitay: { total: 9820145, name: 'Yargıtay' },
+    danistay: { total: 386608, name: 'Danıştay' },
+    emsal: { total: 815702, name: 'Emsal' },
+    aym_bb: { total: 17067, name: 'AYM BB' },
+    aym_norm: { total: 5505, name: 'AYM Norm' }
+};
 
 let db = null;
 let currentFilter = 'all';
 let currentResults = [];
 let searchTimeout = null;
-let searchMode = 'local'; // 'local' veya 'online'
-let searchCache = new Map(); // Arama cache'i
-let allRecordsCache = null; // Tüm kayıtlar cache'i
+let searchMode = 'online'; // Varsayılan: online (corpus araması)
+let searchCache = new Map();
+let allRecordsCache = null;
+let isSearching = false; // Arama durumu
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -38,7 +48,7 @@ const toast = document.getElementById('toast');
 document.addEventListener('DOMContentLoaded', async () => {
     await initDB();
     setupEventListeners();
-    await updateStats();
+    updateSearchModeUI(); // Online mod varsayılan
     showEmptyState();
 });
 
@@ -158,60 +168,131 @@ async function performSearch(query) {
     }
 }
 
-// Online Search - HuggingFace API (rows endpoint with client-side filtering)
+// Online Search - HuggingFace Corpus'tan Doğrudan Arama
 async function performOnlineSearch(query) {
+    if (isSearching) return;
+    isSearching = true;
+    
+    const normalizedQuery = normalizeText(query);
+    const allResults = [];
+    
+    // Hangi kaynaklarda arama yapılacak
+    let sourcesToSearch = currentFilter !== 'all' 
+        ? [currentFilter] 
+        : ['yargitay', 'danistay', 'emsal', 'aym_bb'];
+    
     try {
-        // Kaynak filtresi
-        let config = currentFilter !== 'all' ? currentFilter : 'yargitay';
+        showToast(`🔍 11M+ kayıtta aranıyor...`, 'success');
         
-        // Rastgele bir offset ile veri çek ve client-side filtrele
-        const offset = Math.floor(Math.random() * 1000);
-        const url = `https://datasets-server.huggingface.co/rows?dataset=${HF_DATASET}&config=${config}&split=train&offset=${offset}&length=100`;
+        // Her kaynakta paralel arama yap
+        const searchPromises = sourcesToSearch.map(source => 
+            searchInSource(source, normalizedQuery, query)
+        );
         
-        const response = await fetch(url);
+        const results = await Promise.all(searchPromises);
         
-        if (!response.ok) {
-            throw new Error(`API Hatası: ${response.status}`);
-        }
+        // Sonuçları birleştir
+        results.forEach(r => allResults.push(...r));
         
-        const data = await response.json();
+        // Tarihe göre sırala (en yeni önce)
+        allResults.sort((a, b) => (b.year || 0) - (a.year || 0));
         
-        if (data.rows && data.rows.length > 0) {
-            // Client-side arama
-            const normalizedQuery = normalizeText(query);
-            const filtered = data.rows
-                .map(row => row.row)
-                .filter(record => {
-                    const text = normalizeText(record.text || '');
-                    const esasNo = normalizeText(record.esas_no || '');
-                    const kararNo = normalizeText(record.karar_no || '');
-                    return text.includes(normalizedQuery) || 
-                           esasNo.includes(normalizedQuery) || 
-                           kararNo.includes(normalizedQuery);
-                });
-            
-            if (filtered.length > 0) {
-                currentResults = filtered;
-                displayResults(currentResults, query);
-                saveToHistory(query, currentResults.length);
-            } else {
-                // Filtre sonucu boşsa, rastgele sonuç göster
-                showToast('Tam eşleşme bulunamadı. Rastgele sonuçlar gösteriliyor.', 'success');
-                currentResults = data.rows.slice(0, 20).map(row => row.row);
-                displayResults(currentResults, query);
-            }
+        currentResults = allResults.slice(0, 100);
+        
+        if (currentResults.length > 0) {
+            displayResults(currentResults, query);
+            saveToHistory(query, currentResults.length);
+            showToast(`✓ ${currentResults.length} sonuç bulundu`, 'success');
         } else {
-            currentResults = [];
             displayResults([], query);
+            showToast('Sonuç bulunamadı. Farklı kelime deneyin.', 'error');
         }
     } catch (error) {
         console.error('Online arama hatası:', error);
-        showToast('Online arama başarısız. Yerel aramayı deneyin.', 'error');
+        showToast('Online arama hatası. Tekrar deneyin.', 'error');
         hideLoading();
-        
-        // Fallback to local search
-        await performLocalSearch(query);
+    } finally {
+        isSearching = false;
     }
+}
+
+// Tek bir kaynakta arama yap
+async function searchInSource(source, normalizedQuery, originalQuery) {
+    const info = SOURCE_INFO[source];
+    if (!info) return [];
+    
+    const results = [];
+    const batchSize = 100;
+    const maxBatches = 20; // Her kaynak için max 20 batch (2000 kayıt taranır)
+    
+    // Farklı bölgelerden örnekle (baştan, ortadan, sondan)
+    const totalRows = info.total;
+    const positions = [
+        Math.max(0, totalRows - 5000), // Son kayıtlar (en güncel)
+        Math.max(0, totalRows - 50000), // Orta-son
+        Math.floor(totalRows / 2), // Orta
+        0 // Başlangıç
+    ];
+    
+    for (let posIdx = 0; posIdx < positions.length && results.length < 25; posIdx++) {
+        const startOffset = positions[posIdx];
+        
+        for (let batch = 0; batch < maxBatches && results.length < 25; batch++) {
+            const offset = startOffset + (batch * batchSize);
+            if (offset >= totalRows) break;
+            
+            try {
+                const url = `${HF_API_URL}?dataset=${HF_DATASET}&config=${source}&split=train&offset=${offset}&length=${batchSize}`;
+                const response = await fetch(url, { 
+                    signal: AbortSignal.timeout(10000) 
+                });
+                
+                if (!response.ok) continue;
+                
+                const data = await response.json();
+                if (!data.rows || data.rows.length === 0) break;
+                
+                // Client-side filtreleme
+                for (const row of data.rows) {
+                    const record = row.row;
+                    const text = normalizeText(record.text || '');
+                    const esasNo = normalizeText(record.esas_no || '');
+                    const kararNo = normalizeText(record.karar_no || '');
+                    const court = normalizeText(record.court || '');
+                    
+                    if (text.includes(normalizedQuery) || 
+                        esasNo.includes(normalizedQuery) || 
+                        kararNo.includes(normalizedQuery) ||
+                        court.includes(normalizedQuery)) {
+                        
+                        // Metni kısalt (performans için)
+                        let shortText = record.text || '';
+                        if (shortText.length > 5000) {
+                            shortText = shortText.substring(0, 5000) + '...';
+                        }
+                        
+                        results.push({
+                            id: record.id || `${source}_${offset}_${results.length}`,
+                            source: source,
+                            court: record.court || info.name,
+                            esas_no: record.esas_no || '',
+                            karar_no: record.karar_no || '',
+                            karar_tarihi: record.karar_tarihi || '',
+                            year: record.year || 0,
+                            text: shortText
+                        });
+                        
+                        if (results.length >= 25) break;
+                    }
+                }
+            } catch (e) {
+                console.log(`${source} batch ${batch} hatası:`, e.message);
+                continue;
+            }
+        }
+    }
+    
+    return results;
 }
 
 // Local Search - Optimized with caching
@@ -309,16 +390,37 @@ function clearSearchCache() {
 
 // Toggle search mode
 function toggleSearchMode() {
+    if (isSearching) {
+        showToast('Arama devam ediyor, bekleyin...', 'error');
+        return;
+    }
     searchMode = searchMode === 'local' ? 'online' : 'local';
     updateSearchModeUI();
-    showToast(searchMode === 'online' ? '🌐 Online mod (11M karar)' : '📱 Yerel mod', 'success');
+    
+    if (searchMode === 'online') {
+        showToast('🌐 Corpus modu: 11M+ kararda arama', 'success');
+    } else {
+        showToast('📱 Yerel mod: İndirilen kararlarda arama', 'success');
+    }
 }
 
 function updateSearchModeUI() {
     const btn = document.getElementById('searchModeBtn');
     if (btn) {
-        btn.textContent = searchMode === 'online' ? '🌐 Online' : '📱 Yerel';
-        btn.classList.toggle('online', searchMode === 'online');
+        if (searchMode === 'online') {
+            btn.textContent = '🌐 Corpus';
+            btn.classList.add('online');
+        } else {
+            btn.textContent = '📱 Yerel';
+            btn.classList.remove('online');
+        }
+    }
+    
+    // Stats'ı da güncelle
+    if (searchMode === 'online') {
+        dbStats.textContent = 'Corpus: 11M+ karar';
+    } else {
+        updateStats();
     }
 }
 
