@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'IctihatAramaDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Version up for new index
 const STORE_NAME = 'kararlar';
 const FAV_STORE = 'favoriler';
 const HISTORY_STORE = 'gecmis';
@@ -18,6 +18,8 @@ let currentFilter = 'all';
 let currentResults = [];
 let searchTimeout = null;
 let searchMode = 'local'; // 'local' veya 'online'
+let searchCache = new Map(); // Arama cache'i
+let allRecordsCache = null; // Tüm kayıtlar cache'i
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -212,7 +214,7 @@ async function performOnlineSearch(query) {
     }
 }
 
-// Local Search - IndexedDB
+// Local Search - Optimized with caching
 async function performLocalSearch(query) {
     if (!db) {
         hideLoading();
@@ -221,9 +223,60 @@ async function performLocalSearch(query) {
     }
     
     const normalizedQuery = normalizeText(query);
-    const results = [];
+    const cacheKey = `${normalizedQuery}_${currentFilter}`;
     
+    // Cache kontrolü
+    if (searchCache.has(cacheKey)) {
+        currentResults = searchCache.get(cacheKey);
+        displayResults(currentResults, query);
+        return;
+    }
+    
+    // Tüm kayıtları cache'le (ilk aramada)
+    if (!allRecordsCache) {
+        allRecordsCache = await loadAllRecords();
+    }
+    
+    // Hızlı arama (memory'de)
+    const results = [];
+    for (const record of allRecordsCache) {
+        // Filter by source
+        if (currentFilter !== 'all' && record.source !== currentFilter) {
+            continue;
+        }
+        
+        // Hızlı arama - önce kısa alanlarda
+        const esasNo = record.normalizedEsas || '';
+        const kararNo = record.normalizedKarar || '';
+        const court = record.normalizedCourt || '';
+        
+        if (esasNo.includes(normalizedQuery) || 
+            kararNo.includes(normalizedQuery) || 
+            court.includes(normalizedQuery)) {
+            results.push(record);
+            continue;
+        }
+        
+        // Metin araması
+        if (record.normalizedText && record.normalizedText.includes(normalizedQuery)) {
+            results.push(record);
+        }
+        
+        // 100 sonuç yeterli
+        if (results.length >= 100) break;
+    }
+    
+    currentResults = results;
+    searchCache.set(cacheKey, results);
+    
+    displayResults(currentResults, query);
+    saveToHistory(query, results.length);
+}
+
+// Tüm kayıtları yükle ve normalize et
+async function loadAllRecords() {
     return new Promise((resolve) => {
+        const records = [];
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const store = transaction.objectStore(STORE_NAME);
         const request = store.openCursor();
@@ -232,42 +285,26 @@ async function performLocalSearch(query) {
             const cursor = event.target.result;
             if (cursor) {
                 const record = cursor.value;
-                
-                // Filter by source
-                if (currentFilter !== 'all' && record.source !== currentFilter) {
-                    cursor.continue();
-                    return;
-                }
-                
-                // Search in text, esas_no, karar_no, court
-                const searchFields = [
-                    record.text || '',
-                    record.esas_no || '',
-                    record.karar_no || '',
-                    record.court || ''
-                ].join(' ');
-                
-                const normalizedFields = normalizeText(searchFields);
-                
-                if (normalizedFields.includes(normalizedQuery)) {
-                    results.push(record);
-                }
-                
+                // Normalize edilmiş alanları ekle
+                record.normalizedText = normalizeText(record.text || '');
+                record.normalizedEsas = normalizeText(record.esas_no || '');
+                record.normalizedKarar = normalizeText(record.karar_no || '');
+                record.normalizedCourt = normalizeText(record.court || '');
+                records.push(record);
                 cursor.continue();
             } else {
-                // Search complete
-                currentResults = results.slice(0, 100); // Limit results
-                displayResults(currentResults, query);
-                saveToHistory(query, results.length);
-                resolve();
+                resolve(records);
             }
         };
         
-        request.onerror = () => {
-            showToast('Arama hatası', 'error');
-            resolve();
-        };
+        request.onerror = () => resolve([]);
     });
+}
+
+// Cache temizle (veri değiştiğinde)
+function clearSearchCache() {
+    searchCache.clear();
+    allRecordsCache = null;
 }
 
 // Toggle search mode
@@ -573,7 +610,10 @@ async function importData(records) {
             };
         });
         
-        transaction.oncomplete = () => resolve(completed);
+        transaction.oncomplete = () => {
+            clearSearchCache(); // Cache temizle
+            resolve(completed);
+        };
         transaction.onerror = () => reject(transaction.error);
     });
 }
